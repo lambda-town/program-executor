@@ -13,6 +13,7 @@ import scala.sys.process._
 package object programexecutor {
 
   def runProcess(commands: List[String]): Stream[IO, ProgramEvent] = {
+
     val streamIO = for {
       queue <- Queue.unbounded[IO, Option[ProgramEvent]]
       _ <- (IO {
@@ -29,20 +30,23 @@ package object programexecutor {
         }
 
         Process(commands).run(processLogger).exitValue()
-      }.flatMap(code => queue.offer1(Some(Exit(code)))) *> queue.offer1(None)).start
+      }
+        .recover({ case _ => 1 })
+        .flatMap(code => queue.offer1(Some(Exit(code)))) *> queue.offer1(None))
+        .start
     } yield queue.dequeue.unNoneTerminate
 
-    Stream.eval(streamIO).flatten
+    Stream.eval(streamIO).parJoinUnbounded
   }
 
   def toEitherT(stream: Stream[IO, ProgramEvent]): EitherT[IO, String, String] = EitherT {
     stream.compile.toList.map {
       case events :+ Exit(0) => Right(events.collect({
         case StdOut(line) => line
-      }).mkString)
+      }).mkString("\n"))
       case events => Left(events.collect({
         case StdErr(line) => line
-      }).mkString)
+      }).mkString("\n"))
     }
   }
 
