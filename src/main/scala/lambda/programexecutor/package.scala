@@ -3,6 +3,7 @@ package lambda
 import cats.implicits._
 import cats.data.EitherT
 import cats.effect.IO
+import com.typesafe.scalalogging.StrictLogging
 import fs2._
 import fs2.concurrent.Queue
 import lambda.programexecutor.Executor._
@@ -10,7 +11,7 @@ import lambda.programexecutor.ProgramEvent.{Exit, StdErr, StdOut}
 
 import scala.sys.process._
 
-package object programexecutor {
+package object programexecutor extends StrictLogging {
 
   def runProcess(commands: List[String]): Stream[IO, ProgramEvent] = {
 
@@ -31,7 +32,11 @@ package object programexecutor {
 
         Process(commands).run(processLogger).exitValue()
       }
-        .recover({ case _ => 1 })
+        .recoverWith({ case e =>
+          IO(logger.warn("Error while running external program", e)) >>
+            queue.offer1(Some(StdErr(e.getMessage))) >>
+            IO.pure(1)
+        })
         .flatMap(code => queue.offer1(Some(Exit(code)))) *> queue.offer1(None))
         .start
     } yield queue.dequeue.unNoneTerminate
