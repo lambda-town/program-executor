@@ -3,6 +3,8 @@ pull_request_rules:
     conditions:
       - "author=gbogard"
       - "title~=Update .* to .*"
+      - "status-success~=build"
     actions:
       merge:
-        method: merge
+        strict: smart
+        strict_method: merge
