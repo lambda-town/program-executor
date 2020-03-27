@@ -15,7 +15,7 @@ lazy val root = (project in file("."))
     name := "program-executor",
     githubOwner := "lambdacademy-dev",
     libraryDependencies ++= Seq(
-      "co.fs2" %% "fs2-core" % "2.1.0",
+      "co.fs2" %% "fs2-core" % "2.3.0",
       "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
       "ch.qos.logback" % "logback-classic" % "1.2.3"
     )
