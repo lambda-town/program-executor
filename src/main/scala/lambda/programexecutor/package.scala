@@ -13,10 +13,10 @@ import scala.sys.process._
 
 package object programexecutor extends StrictLogging {
 
-  def runProcess(commands: List[String]): Stream[IO, ProgramEvent] = {
+  def runProcess(commands: List[String], bufferSize: Int = 200): Stream[IO, ProgramEvent] = {
 
     val streamIO = for {
-      queue <- Queue.unbounded[IO, Option[ProgramEvent]]
+      queue <- Queue.circularBuffer[IO, Option[ProgramEvent]](bufferSize)
       _ <- (IO {
         val processLogger = new ProcessLogger {
           def out(s: => String): Unit = {
@@ -41,7 +41,7 @@ package object programexecutor extends StrictLogging {
         .start
     } yield queue.dequeue.unNoneTerminate
 
-    Stream.eval(streamIO).parJoinUnbounded
+    Stream.eval(streamIO).parJoin(1)
   }
 
   def toEitherT(stream: Stream[IO, ProgramEvent]): EitherT[IO, String, String] = EitherT {
