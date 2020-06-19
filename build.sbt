@@ -5,7 +5,7 @@ ThisBuild / organizationName := "Lambda Town"
 
 githubOwner := "lambda-town"
 resolvers += Resolver.githubPackages("lambda-town")
-githubRepository := "api"
+githubRepository := "program-executor"
 githubTokenSource :=  TokenSource.GitConfig("github.token") || TokenSource.Environment("GITHUB_TOKEN")
 
 lazy val root = (project in file("."))
